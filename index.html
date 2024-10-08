@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World's Best Restaurants Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        #map { height: 600px; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div>
+        <button id="prevYear">Previous Year</button>
+        <span id="currentYear"></span>
+        <button id="nextYear">Next Year</button>
+    </div>
+
+    <script>
+        let map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        let restaurants = [];
+        let years = [];
+        let currentYearIndex = 0;
+        let markers = L.layerGroup().addTo(map);
+
+        fetch("restaurants.json")
+            .then(response => response.json())
+            .then(data => {
+                restaurants = data;
+                initializeMap();
+            })
+            .catch(error => console.error('Error:', error));
+
+        function initializeMap() {
+            years = [...new Set(restaurants.map(r => r.year))].sort();
+            currentYearIndex = years.length - 1;
+            updateMap();
+            document.getElementById('currentYear').textContent = years[currentYearIndex];
+        }
+
+        function updateMap() {
+            markers.clearLayers();
+            restaurants.filter(r => r.year === years[currentYearIndex]).forEach(r => {
+                L.marker([r.lat, r.lng])
+                    .bindPopup(`${r.restaurant}<br>${r.location}, ${r.country}<br>Rank: ${r.rank}`)
+                    .addTo(markers);
+            });
+        }
+
+        document.getElementById('prevYear').addEventListener('click', () => {
+            if (currentYearIndex > 0) {
+                currentYearIndex--;
+                updateMap();
+                document.getElementById('currentYear').textContent = years[currentYearIndex];
+            }
+        });
+
+        document.getElementById('nextYear').addEventListener('click', () => {
+            if (currentYearIndex < years.length - 1) {
+                currentYearIndex++;
+                updateMap();
+                document.getElementById('currentYear').textContent = years[currentYearIndex];
+            }
+        });
+    </script>
+</body>
+</html>
